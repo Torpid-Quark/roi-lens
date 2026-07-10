@@ -1,0 +1,11 @@
+Brand_ID,Users,Conversions,Conversion_Rate_%,Holdout_Rank_Correlation,Budget_INR,Top_Channel_By_Allocation
+B01,8812,621,41.37,0.4,100000000.0,Instagram
+B02,8913,1141,58.6,0.6,100000000.0,Influencer Blog
+B03,8877,276,23.0,-0.359,100000000.0,Influencer Blog
+B04,8832,278,23.26,-0.2,100000000.0,Marketplace
+B05,8839,147,13.42,0.0,118605945.0,Marketplace
+B06,8843,267,21.89,0.0,100000000.0,Instagram
+B07,8869,1450,65.58,0.7,100000000.0,YouTube
+B08,8905,275,22.45,-0.462,100000000.0,Instagram
+B09,8809,179,15.74,0.3,100000000.0,Google Search
+B10,8783,280,23.06,0.053,100000000.0,Influencer Blog
