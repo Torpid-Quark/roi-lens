@@ -1,6 +1,6 @@
 Channel,Train_Attribution_%,Holdout_Attribution_%
-Influencer Blog,31.27,21.13
-Google Search,31.21,23.78
-Marketplace,20.05,27.55
-YouTube,16.56,16.22
-Instagram,0.91,11.32
+Google Search,60.27,89.96
+YouTube,11.39,1.92
+Instagram,9.83,2.42
+Influencer Blog,9.82,1.89
+Marketplace,8.7,3.81

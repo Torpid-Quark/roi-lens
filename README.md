@@ -70,62 +70,68 @@ events) from the Markov chain itself. Impressions are still used for bot
 detection — a bot inflating impression counts is a real signal — but
 treating an untouched ad exposure as equivalent to a Click in the transition
 matrix would dilute the model with noise the person never acted on.
+Purchase events are treated as the terminal touchpoint: the Purchase row's
+Channel is retained in the journey before the absorbing Conversion state.
+This preserves the final marketing touch used for both naive last-click and
+Markov attribution.
+
 
 ## Key Finding: Model Reliability Is Volume-Dependent
 
 The single most important result from this project isn't a channel ranking —
-it's that **the model's own out-of-sample reliability is strongly correlated
-with each brand's conversion volume (r = 0.778)**:
+it's that **the model's own out-of-sample reliability is positively correlated
+with each brand's conversion volume (r = 0.529)**:
 
 | Brand | Conversions | Holdout Rank Correlation |
-|---|---|---|
-| B07 | 1,450 | **0.70** (strong) |
-| B02 | 1,141 | **0.60** (strong) |
-| B01 | 621 | 0.40 (moderate) |
-| B09 | 179 | 0.30 (weak) |
-| B10 | 280 | 0.05 (none) |
-| B08 | 275 | **−0.46** (inverted) |
-| B03 | 276 | **−0.36** (inverted) |
+|---|---:|---:|
+| B07 | 1,450 | **1.00** (strong) |
+| B01 | 621 | **0.87** (strong) |
+| B10 | 280 | 0.70 (moderate) |
+| B09 | 179 | 0.60 (moderate) |
+| B02 | 1,141 | 0.30 (weak) |
+| B03 | 276 | 0.30 (weak) |
+| B04 | 278 | 0.30 (weak) |
+| B05 | 147 | 0.20 (weak) |
+| B06 | 267 | 0.10 (weak) |
+| B08 | 275 | 0.10 (weak) |
 
-Brands with 1,000+ conversions validate well out-of-sample; brands with
-under ~300 produce holdout rankings that are noisy or even inverted relative
-to the training split. **Practical takeaway: this attribution method should
-only be trusted above a conversion-volume threshold (roughly 500+ in this
-dataset) — below that, a simpler heuristic is more honest than a
-sophisticated model with unstable estimates.** This is a stronger, more
-defensible claim than "the model works," because it states precisely where
-it doesn't.
+The relationship is positive but imperfect: higher conversion volume generally
+provides more stable holdout rankings, while several lower-volume brands still
+produce weak or unstable estimates. **Practical takeaway: treat attribution
+outputs as more reliable when conversion volume is high; for low-volume brands,
+a simpler heuristic may be more appropriate than relying heavily on a noisy
+multi-touch estimate.**
 
 ## Flagship Case Study: Brand B07
 
-B07 has the largest conversion volume (1,450) and the most stable holdout
-validation (rank correlation 0.70) in the portfolio — the brand where this
+B07 has the largest conversion volume (1,450) and the strongest holdout
+validation (rank correlation 1.00) in the portfolio — the brand where this
 method's output can be trusted with the most confidence.
 
 | Channel | Naive Last-Click % | True Attribution % | True CPA (₹) |
-|---|---|---|---|
-| Google Search | 33.15% | 32.13% | 56,432 |
-| Influencer Blog | 19.89% | 19.53% | 10,950 |
-| Instagram | 18.23% | 18.08% | 183,515 |
-| YouTube | 15.47% | 15.73% | **10,071** |
-| Marketplace | 13.26% | 14.53% | 95,874 |
+|---|---:|---:|---:|
+| Google Search | 69.10% | 64.85% | 27,960 |
+| Marketplace | 24.00% | 23.29% | 59,821 |
+| Instagram | 2.55% | 4.27% | 777,053 |
+| YouTube | 2.41% | 3.90% | **40,666** |
+| Influencer Blog | 1.93% | 3.70% | 57,821 |
 
-The cost-efficiency gap between the cheapest channel (YouTube, ₹10,071 CPA)
-and the most expensive (Instagram, ₹183,515 CPA) is **18.2×** — despite
-Instagram and YouTube receiving similar attribution credit (18% vs 16%),
-Instagram is dramatically less efficient at converting that credit into
-actual purchases.
+The cost-efficiency gap between YouTube (₹40,666 CPA) and Instagram
+(₹777,053 CPA) is **19.1×** despite both receiving relatively small shares
+of naive last-click credit. The Markov model gives more credit to Instagram,
+YouTube, and Influencer Blog than naive last-click, illustrating how
+multi-touch attribution can redistribute credit away from the dominant
+last-click channel.
 
 ## Portfolio-Level Finding: No Universal Best Channel
 
-Averaged across all 10 brands, true attribution is fairly evenly spread
-(Instagram 23.5%, Influencer Blog 21.2%, Google Search 20.2%, Marketplace
-19.7%, YouTube 15.4%) — but the **top recommended channel differs by
-brand**: Instagram leads for B01/B06/B08, Influencer Blog for B02/B03/B10,
-Marketplace for B04/B05, YouTube for B07, Google Search for B09. A portfolio-
-wide "shift budget to Channel X" recommendation would be wrong for at least
-half the brands it's applied to — the right level of action is per-brand,
-not per-portfolio.
+Averaged across all 10 brands, true attribution is concentrated in Google Search
+(28.45%) and Marketplace (24.58%), followed by Instagram (19.09%),
+Influencer Blog (15.76%), and YouTube (12.12%) — but the **top recommended
+channel differs by brand**: Instagram leads for B01/B06, Influencer Blog for
+B02/B03/B10, Marketplace for B04/B05/B09, and Google Search for B07/B08.
+A portfolio-wide "shift budget to Channel X" recommendation would therefore
+be misleading; the right level of action is per-brand, not per-portfolio.
 
 ## Limitations (Stated Proactively)
 

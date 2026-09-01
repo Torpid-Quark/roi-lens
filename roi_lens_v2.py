@@ -4,7 +4,7 @@ ROI Lens v2 — Upgraded Multi-Touch Attribution Engine
 Adds on top of the original notebook:
   1. SQL-based ETL layer (SQLite, window functions + CTEs) for bot filtering
      and journey-path construction -> real, demonstrable SQL skill.
-  2. Bootstrap confidence intervals on attribution weights (1,000 resamples)
+  2. Bootstrap confidence intervals on attribution weights (500 resamples per brand)
      -> turns a point estimate into a statistically defensible claim.
   3. Time-based holdout validation (quasi-experimental check) -> the honest
      substitute for A/B testing when you don't have a live experiment.
@@ -156,10 +156,10 @@ def build_journeys(merged_df: pd.DataFrame):
         journey = ["Start"]
         converted = False
         for ch, ev in zip(channels, events):
+            journey.append(ch)
             if ev == "Purchase":
                 converted = True
                 break
-            journey.append(ch)
         journey.append("Conversion" if converted else "Null")
         journeys.append(journey)
     return journeys
