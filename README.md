@@ -16,43 +16,41 @@ media budget.
 
 ## Architecture
 
-```
-Raw Events (566K+ rows: Impression, Click, Add-to-Cart, Purchase)
-      │
-      ▼
-┌─────────────────────────────────────────┐
-│  SQL ETL Layer (SQLite)                  │
-│  • CTE + window functions for bot         │
-│    detection (volume + click-velocity)   │
-│  • Journey-path construction              │
-└─────────────────────────────────────────┘
-      │
-      ▼  (split by Brand_ID — 10 brands, independent budgets)
-      │
-┌─────────────────────────────────────────┐
-│  Per-Brand Markov Chain Attribution       │
-│  • Journey built from ENGAGEMENT events   │
-│    only (Click/Cart/Purchase) — passive   │
-│    impressions excluded from the chain    │
-│  • Removal-effect via fundamental matrix  │
-│    inversion: N = (I − Q)⁻¹               │
-└─────────────────────────────────────────┘
-      │
-      ├──► Naive last-click baseline (comparison)
-      ├──► Bootstrap resampling (500 iters/brand → 95% CI)
-      ├──► Time-based holdout validation (train vs test, same units)
-      │
-      ▼
-┌─────────────────────────────────────────┐
-│  Per-Brand CPA + Fatigue-Adjusted Budget  │
-│  • True CPA per channel, per brand        │
-│  • √-dampened reallocation against each   │
-│    brand's ACTUAL budget                  │
-└─────────────────────────────────────────┘
-      │
-      ▼
-Portfolio Rollup (10 brands) + Power BI Dashboard
-```
+    Raw Events (566K+ rows: Impression, Click, Add-to-Cart, Purchase)
+          │
+          ▼
+    ┌─────────────────────────────────────────┐
+    │  SQL ETL Layer (SQLite)                  │
+    │  • CTE + window functions for bot         │
+    │    detection (volume + click-velocity)   │
+    │  • Journey-path construction              │
+    └─────────────────────────────────────────┘
+          │
+          ▼  (split by Brand_ID — 10 brands, independent budgets)
+          │
+    ┌─────────────────────────────────────────┐
+    │  Per-Brand Markov Chain Attribution       │
+    │  • Journey built from ENGAGEMENT events   │
+    │    only (Click/Cart/Purchase) — passive   │
+    │    impressions excluded from the chain    │
+    │  • Removal-effect via fundamental matrix  │
+    │    inversion: N = (I − Q)⁻¹               │
+    └─────────────────────────────────────────┘
+          │
+          ├──► Naive last-click baseline (comparison)
+          ├──► Bootstrap resampling (500 iters/brand → 95% CI)
+          ├──► Time-based holdout validation (train vs test, same units)
+          │
+          ▼
+    ┌─────────────────────────────────────────┐
+    │  Per-Brand CPA + Fatigue-Adjusted Budget  │
+    │  • True CPA per channel, per brand        │
+    │  • Fatigue-adjusted reallocation against  │
+    │    each brand's ACTUAL budget             │
+    └─────────────────────────────────────────┘
+          │
+          ▼
+    Portfolio Rollup (10 brands) + Power BI Dashboard
 
 ## Why Per-Brand, Not Pooled
 
@@ -74,7 +72,6 @@ Purchase events are treated as the terminal touchpoint: the Purchase row's
 Channel is retained in the journey before the absorbing Conversion state.
 This preserves the final marketing touch used for both naive last-click and
 Markov attribution.
-
 
 ## Key Finding: Model Reliability Is Volume-Dependent
 
@@ -133,6 +130,23 @@ B02/B03/B10, Marketplace for B04/B05/B09, and Google Search for B07/B08.
 A portfolio-wide "shift budget to Channel X" recommendation would therefore
 be misleading; the right level of action is per-brand, not per-portfolio.
 
+## Power BI Dashboard
+
+The final outputs are surfaced through an interactive Power BI dashboard with
+portfolio-level monitoring, per-brand drill-downs, and a B07 case study.
+
+### Portfolio Overview
+
+![Portfolio Overview](screenshots/portfolio_overview.png)
+
+### Brand Deep Dive
+
+![Brand Deep Dive](screenshots/brand_deep_dive.png)
+
+### B07 Case Study
+
+![B07 Case Study](screenshots/b07_case_study.png)
+
 ## Limitations (Stated Proactively)
 
 - **Reliability is volume-dependent** (see above) — treat low-conversion
@@ -140,9 +154,9 @@ be misleading; the right level of action is per-brand, not per-portfolio.
 - Removal effects are computed independently per channel and normalized to
   100%, assuming limited interaction between channels — a known simplification
   of this attribution family.
-- The fatigue-dampening exponent (default √, i.e. 0.5) is a modeling
-  assumption, not empirically fit; it's exposed as a Power BI What-If
-  parameter specifically so it's adjustable rather than silently fixed.
+- The fatigue-dampening exponent is a modeling assumption, not empirically fit.
+  The base case uses 0.5 (√), with a Power BI What-If sensitivity range of
+  0.3–0.8 so the effect of the assumption can be explored interactively.
 - Bot thresholds (500 actions, 1-second click interval) are heuristic, not
   tuned via sensitivity analysis on this specific dataset.
 - Holdout validation checks whether channel *rankings* hold up out-of-sample;
@@ -159,10 +173,8 @@ be misleading; the right level of action is per-brand, not per-portfolio.
 
 ## Setup
 
-```bash
-pip install pandas numpy
-python roi_lens_v2.py
-```
+    pip install pandas numpy
+    python roi_lens_v2.py
 
 Expects `data/touchpoints.csv`, `data/user_profiles.csv`,
 `data/campaign_spend.csv`. Outputs per-brand CSVs to
@@ -170,23 +182,26 @@ Expects `data/touchpoints.csv`, `data/user_profiles.csv`,
 
 ## Repository Structure
 
-```
-roi-lens/
-├── data/                                  # input CSVs (not included)
-├── roi_lens_v2.py                         # full pipeline
-├── powerbi_exports/
-│   ├── bot_funnel_summary.csv
-│   ├── bot_summary_by_brand.csv
-│   ├── user_journey_paths.csv
-│   ├── portfolio_summary_by_brand.csv     # one row per brand
-│   ├── portfolio_channel_view.csv         # avg attribution across brands
-│   └── <BRAND_ID>/
-│       ├── naive_vs_true_attribution.csv
-│       ├── attribution_with_confidence_intervals.csv
-│       ├── holdout_validation.csv
-│       └── final_budget_allocation.csv
-└── README.md
-```
+    roi-lens/
+    ├── data/                                  # input CSVs (not included)
+    ├── roi_lens_v2.py                         # full pipeline
+    ├── ROI_Lens_Dashboard.pbix                # Power BI dashboard
+    ├── screenshots/                           # dashboard previews
+    │   ├── portfolio_overview.png
+    │   ├── brand_deep_dive.png
+    │   └── b07_case_study.png
+    ├── powerbi_exports/
+    │   ├── bot_funnel_summary.csv
+    │   ├── bot_summary_by_brand.csv
+    │   ├── user_journey_paths.csv
+    │   ├── portfolio_summary_by_brand.csv     # one row per brand
+    │   ├── portfolio_channel_view.csv         # avg attribution across brands
+    │   └── <BRAND_ID>/
+    │       ├── naive_vs_true_attribution.csv
+    │       ├── attribution_with_confidence_intervals.csv
+    │       ├── holdout_validation.csv
+    │       └── final_budget_allocation.csv
+    └── README.md
 
 ## Future Work
 
